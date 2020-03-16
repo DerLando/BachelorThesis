@@ -6,6 +6,10 @@ namespace BachelorThesis
 {
     public class BachelorThesisInfo : GH_AssemblyInfo
     {
+        public static string MAINCATEGORY = "Parabola";
+        public static string SUBCATEGORY_CREATE = "Create";
+
+
         public override string Name
         {
             get
