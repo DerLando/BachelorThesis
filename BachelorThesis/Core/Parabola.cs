@@ -44,7 +44,7 @@ namespace BachelorThesis.Core
             if (y == Height) return new double[] {0.0};
 
             var xValues = new double[2];
-            xValues[0] = -Math.Sqrt(Width * Width * (Height - y) / 4 * Height);
+            xValues[0] = -Math.Sqrt(Width * Width * (Height - y) / (4 * Height));
             xValues[1] = -xValues[0];
 
             return xValues;
@@ -52,7 +52,7 @@ namespace BachelorThesis.Core
 
         public double EvaluateX(double x)
         {
-            return (-4 * Height) / (Width * Width) + Height;
+            return (-4 * Height) / (Width * Width) * (x * x) + Height;
         }
 
         public Point3d[] GetPointsAtHeight(double height)
