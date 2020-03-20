@@ -48,7 +48,14 @@ namespace BachelorThesis.Core
             {
                 var param = planeParams[i];
                 var tangent = Axis.TangentAt(param);
-                var plane = new Plane(Axis.PointAt(param), Vector3d.CrossProduct(tangent, Up), Up);
+                bool success = Axis.PerpendicularFrameAt(param, out var plane);
+
+                var xDirection = Vector3d.CrossProduct(tangent, Up);
+                var angle = Vector3d.VectorAngle(plane.XAxis, xDirection, plane);
+                plane.Rotate(angle, plane.ZAxis);
+
+                // only works for linear beams
+                //var plane = new Plane(Axis.PointAt(param), Vector3d.CrossProduct(tangent, Up), Up);
 
                 crossSections[i] = new Rectangle3d(plane, widthInterval, heightInterval).ToPolyline().ToPolylineCurve();
             }
