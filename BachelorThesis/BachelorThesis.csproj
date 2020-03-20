@@ -58,7 +58,10 @@
   <ItemGroup>
     <Compile Include="BachelorThesisComponent.cs" />
     <Compile Include="BachelorThesisInfo.cs" />
+    <Compile Include="Components\Beam.cs" />
+    <Compile Include="Components\ExplodeBeam.cs" />
     <Compile Include="Components\Parabola.cs" />
+    <Compile Include="Core\BeamBase.cs" />
     <Compile Include="Core\Parabola.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

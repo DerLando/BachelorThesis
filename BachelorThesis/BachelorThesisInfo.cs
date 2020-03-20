@@ -8,7 +8,7 @@ namespace BachelorThesis
     {
         public static string MAINCATEGORY = "Parabola";
         public static string SUBCATEGORY_CREATE = "Create";
-
+        public static string SUBCATEGORY_EXPLODE = "Explode";
 
         public override string Name
         {
