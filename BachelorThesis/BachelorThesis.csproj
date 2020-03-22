@@ -64,6 +64,7 @@
     <Compile Include="Components\ExplodeJoint.cs" />
     <Compile Include="Components\Parabola.cs" />
     <Compile Include="Core\BeamBase.cs" />
+    <Compile Include="Core\Extensions.cs" />
     <Compile Include="Core\Joint.cs" />
     <Compile Include="Core\JointFactory.cs" />
     <Compile Include="Core\Parabola.cs" />

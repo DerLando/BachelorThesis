@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Rhino;
 using Rhino.Geometry;
 
 namespace BachelorThesis.Core
 {
-    public class BeamBase
+    public class Beam : ICloneable
     {
         public Curve Axis { get; set; }
         public double Width { get; set; }
@@ -22,7 +23,9 @@ namespace BachelorThesis.Core
 
         public Brep Geometry => _geometry;
 
-        public BeamBase(Curve axis, double width, double height, Vector3d up)
+        public Beam() { }
+
+        public Beam(Curve axis, double width, double height, Vector3d up)
         {
             Axis = axis;
             Width = width;
@@ -66,9 +69,86 @@ namespace BachelorThesis.Core
             _geometry = _volumeGeometry.DuplicateBrep();
         }
 
+        public void SetEndTangent(CurveEnd end, Vector3d tangent)
+        {
+            switch (end)
+            {
+                case CurveEnd.None:
+                    break;
+                case CurveEnd.Start:
+                    _startTangent = tangent;
+                    break;
+                case CurveEnd.End:
+                    _endTangent = tangent;
+                    break;
+                case CurveEnd.Both:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(end), end, null);
+            }
+        }
+
+        public void ShortenEnd(CurveEnd end, double length, bool absolute)
+        {
+            Plane plane = Plane.Unset;
+            Point3d origin = Point3d.Unset;
+            Vector3d tangent = Vector3d.Unset;
+
+            switch (end)
+            {
+                case CurveEnd.None:
+                    break;
+                case CurveEnd.Start:
+                    tangent = _startTangent;
+                    origin = absolute ? Axis.PointAtLength(length) : Axis.PointAt(length);
+                    break;
+                case CurveEnd.End:
+                    tangent = _endTangent;
+                    origin = absolute ? Axis.PointAtLength(Axis.GetLength() - length) : Axis.PointAt(length);
+                    break;
+                case CurveEnd.Both:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(end), end, null);
+            }
+
+            plane = new Plane(origin, Vector3d.CrossProduct(tangent, Up), Up);
+            if (plane == Plane.Unset) return;
+
+            var trimmed = _geometry.Trim(plane, RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
+            if (trimmed.Length != 1) _geometry = _volumeGeometry.DuplicateBrep();
+            else _geometry = trimmed[0];
+        }
+
         public Brep GetGeometry()
         {
             return _geometry;
+        }
+
+        public Vector3d[] GetTangents()
+        {
+            return new[] {_startTangent, _endTangent};
+        }
+
+        public object Clone()
+        {
+            return new Beam
+            {
+                Axis = Axis.DuplicateCurve(),
+                _endTangent = _endTangent,
+                _geometry = _geometry.DuplicateBrep(),
+                _startTangent = _startTangent,
+                _volumeGeometry = _volumeGeometry.DuplicateBrep(),
+                EvaluationDistance = EvaluationDistance,
+                Height = Height,
+                Up = Up,
+                Width = Width
+            };
+        }
+
+        public Beam Duplicate()
+        {
+            return (Beam) Clone();
         }
     }
 }

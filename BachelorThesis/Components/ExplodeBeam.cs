@@ -32,6 +32,9 @@ namespace BachelorThesis.Components
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddBrepParameter("Geometry", "G", "Volume geometry", GH_ParamAccess.item);
+            pManager.AddCurveParameter("Axis", "A", "Axis of beam", GH_ParamAccess.item);
+            pManager.AddVectorParameter("StartTangent", "S", "Tangent at start", GH_ParamAccess.item);
+            pManager.AddVectorParameter("EndTangent", "E", "Tangent at end", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -40,11 +43,14 @@ namespace BachelorThesis.Components
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            BeamBase beam = null;
+            Core.Beam beam = null;
 
             if (!DA.GetData(0, ref beam)) return;
 
             DA.SetData(0, beam.Geometry.DuplicateBrep());
+            DA.SetData(1, beam.Axis.DuplicateCurve());
+            DA.SetData(2, beam.GetTangents()[0]);
+            DA.SetData(3, beam.GetTangents()[1]);
         }
 
         /// <summary>

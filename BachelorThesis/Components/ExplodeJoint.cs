@@ -33,6 +33,8 @@ namespace BachelorThesis.Components
         {
             pManager.AddGenericParameter("Beams", "B", "Beams joined by this joint", GH_ParamAccess.list);
             pManager.AddGenericParameter("Center", "C", "Center of joint force lines", GH_ParamAccess.item);
+            pManager.AddVectorParameter("V", "V", "", GH_ParamAccess.list);
+            pManager.AddPointParameter("P", "P", "", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -47,6 +49,8 @@ namespace BachelorThesis.Components
 
             DA.SetDataList(0, joint.Beams);
             DA.SetData(1, joint.Center);
+            DA.SetDataList(2, joint.EndTangents);
+            DA.SetDataList(3, joint.IntPts);
         }
 
         /// <summary>

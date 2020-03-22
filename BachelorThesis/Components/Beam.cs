@@ -53,7 +53,7 @@ namespace BachelorThesis.Components
             if (!DA.GetData(2, ref width)) return;
             if (!DA.GetData(3, ref height)) return;
 
-            DA.SetData(0, new BeamBase(axis, width, height, up));
+            DA.SetData(0, new Core.Beam(axis, width, height, up));
         }
 
         /// <summary>
