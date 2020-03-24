@@ -30,5 +30,12 @@ namespace BachelorThesis.Core
 
             return length;
         }
+
+        public static CurveEnd ClosestEndFromParam(this Curve curve, double param)
+        {
+            //if (param < curve.Domain.Min) return CurveEnd.Start;
+            //if (curve.Domain.Min < param && param <= curve.Domain.Mid) return CurveEnd.Start;
+            return param <= curve.Domain.Mid ? CurveEnd.Start : CurveEnd.End;
+        }
     }
 }

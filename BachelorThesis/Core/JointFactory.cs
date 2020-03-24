@@ -12,9 +12,9 @@ namespace BachelorThesis.Core
 {
     public static class JointFactory
     {
-        public static IEnumerable<Joint> CreateJoints(IEnumerable<Beam> beams)
+        public static IEnumerable<Joint> CreateJoints(IEnumerable<Beam> beams, out Beam[] beamArray)
         {
-            var beamArray = (from beam in beams select beam.Duplicate()).ToArray();
+            beamArray = (from beam in beams select beam.Duplicate()).ToArray();
             var axes = (from beam in beamArray select beam.Axis).ToArray();
             Dictionary<Point3d, List<Beam>> vertexBeamTable = new Dictionary<Point3d, List<Beam>>();
             var tol = Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance;

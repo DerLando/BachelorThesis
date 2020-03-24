@@ -30,9 +30,16 @@ namespace BachelorThesis.Core
         private CurveEnd FindEnd(Beam beam)
         {
             beam.Axis.ClosestPoint(Center, out var param);
+            var tol = RhinoDoc.ActiveDoc.ModelAbsoluteTolerance;
+            var epsilon = beam.Axis.Domain.Length * tol;
 
-            if (Math.Abs(param - beam.Axis.Domain.Min) < 0.01) return CurveEnd.Start;
-            if (Math.Abs(param - beam.Axis.Domain.Max) < 0.01) return CurveEnd.End;
+            var isStart = Math.Abs(param - beam.Axis.Domain.Min) < epsilon;
+            var isEnd = Math.Abs(param - beam.Axis.Domain.Max) < epsilon;
+            if (isStart && !isEnd) return CurveEnd.Start;
+            if (!isStart && isEnd) return CurveEnd.End;
+            if (isStart && isEnd)
+                throw new Exception(
+                    $"FindEnd ERROR: Could not define end for {beam.Axis} at param {param} with epsilon {epsilon}!");
             return CurveEnd.None;
         }
 
@@ -44,7 +51,7 @@ namespace BachelorThesis.Core
             var ends = (from beam in Beams select FindEnd(beam)).ToArray();
             var mainBeamIndex = ends.ToList().FindIndex(e => e == CurveEnd.None);
             var mainBeam = Beams[mainBeamIndex];
-            var mainBeamGeo = mainBeam.Geometry.DuplicateBrep();
+            var mainBeamGeo = mainBeam.GetVolumeGeometry();
 
             var tol = RhinoDoc.ActiveDoc.ModelAbsoluteTolerance;
             var node = new Sphere(Center, mainBeam.Width / 2.0).ToNurbsSurface();
@@ -58,29 +65,34 @@ namespace BachelorThesis.Core
 
                 var curBeam = Beams[i];
                 var curEnd = ends[i];
-                //var xEvents = Intersection.CurveSurface(curBeam.Axis, node, tol, 0.00);
-                //foreach (var curveIntersection in xEvents)
-                //{
-                //    if (!curveIntersection.IsPoint) continue;
-                //    curveIntersection.SurfacePointParameter(out var u, out var v);
 
-                //    node.FrameAt(u, v, out var frame);
-                //    curBeam.SetEndTangent(ends[i], frame.Normal);
-
-                //    curBeam.Axis.ClosestPoint(frame.Origin, out var t);
-                //    curBeam.ShortenEnd(ends[i], curBeam.Axis.GetLengthFromEnd(t, ends[i]));
-                //}
+                // Should never have multiple mainBeam!
+                if (curEnd == CurveEnd.None)
+                {
+                    if (ends.All(e => e == CurveEnd.None)) continue;
+                    var doc = RhinoDoc.ActiveDoc;
+                    doc.Objects.AddCurve(curBeam.Axis);
+                    doc.Objects.AddBrep(mainBeamGeo);
+                    throw new Exception($"AlignBeamGeometry ERROR: {curEnd} for beam {i}!");
+                }
 
                 var axis = curBeam.Axis.DuplicateCurve();
-                //if (!Intersection.CurveBrep(axis, mainBeamGeo, tol, out _,
-                //    out var intPts, out var crvIntParams)) continue;
-                if (!Intersection.CurveBrep(axis, mainBeamGeo, tol, 0.01, out var crvIntParams)) continue;
+
+                // Axis should always intersect the mainBeamGeometry!
+                if (!Intersection.CurveBrep(axis, mainBeamGeo, tol, 0.01, out var crvIntParams))
+                {
+                    throw new Exception("AlignBeamGeometry ERROR: Axis did not intersect mainBeamGeometry!");
+                }
+
+                if (crvIntParams.Length > 1)
+                {
+                    crvIntParams[0] = crvIntParams.First(p => axis.ClosestEndFromParam(p) == curEnd);
+                }
 
                 var intPt = axis.PointAt(crvIntParams[0]);
                 mainBeamGeo.ClosestPoint(intPt, out _, out _, out _, out _, tol, out var normal);
-                curBeam.SetEndTangent(curEnd, normal);
 
-                curBeam.ShortenEnd(curEnd, crvIntParams[0], false);
+                curBeam.SetEndCondition(curEnd, normal, crvIntParams[0]);
 
                 axis.Dispose();
 

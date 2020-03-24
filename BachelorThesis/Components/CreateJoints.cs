@@ -33,6 +33,7 @@ namespace BachelorThesis.Components
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Joints", "J", "Created joints", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Beams", "B", "Beams with modified joint geometry", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -45,13 +46,19 @@ namespace BachelorThesis.Components
 
             if(!DA.GetDataList(0, beams)) return;
 
-            var joints = JointFactory.CreateJoints(beams).ToArray();
+            var joints = JointFactory.CreateJoints(beams, out var beamArray).ToArray();
             foreach (var joint in joints)
             {
                 joint.AlignBeamGeometry();
             }
 
+            foreach (var beam in beamArray)
+            {
+                beam.ShortenEnds();
+            }
+
             DA.SetDataList(0, joints);
+            DA.SetDataList(1, beamArray);
         }
 
         /// <summary>
