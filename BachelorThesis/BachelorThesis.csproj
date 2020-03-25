@@ -67,7 +67,9 @@
     <Compile Include="Core\Extensions.cs" />
     <Compile Include="Core\Joint.cs" />
     <Compile Include="Core\JointFactory.cs" />
+    <Compile Include="Core\JointVoxel.cs" />
     <Compile Include="Core\Parabola.cs" />
+    <Compile Include="Core\TragwerkTree.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup />

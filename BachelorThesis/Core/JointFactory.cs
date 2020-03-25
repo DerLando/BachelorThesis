@@ -47,7 +47,59 @@ namespace BachelorThesis.Core
                 }
             }
 
-            return from valuePair in vertexBeamTable select new Joint(valuePair.Value, valuePair.Key);
+            return from valuePair in vertexBeamTable select new Joint(valuePair.Value, new JointVoxel(valuePair.Key, tol, 0));
+        }
+
+        public static IEnumerable<Joint> CreateJoints(IEnumerable<Beam> beams, double jointRadius, out Beam[] beamArray)
+        {
+            beamArray = (from beam in beams select beam.Duplicate()).ToArray();
+            var indices = Enumerable.Range(0, beamArray.Length);
+            var beamIndexPairs = indices.Permutations().ToArray();
+            var tol = Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance;
+
+            var jointTree = new TragwerkTree();
+            var beamTable = new Dictionary<int, List<Beam>>();
+            var voxelTable = new Dictionary<int, JointVoxel>();
+
+            ///TODO: write this method utilizing voxels
+            /// The idea is to have an insert method on the voxel tree, which returns
+            /// either the index integer of the voxel to be inserted
+            /// or the index of another voxel containing this voxel
+            /// From that we can build up our beamTable with its voxel indices
+            /// storing lists of beams inside of them
+            ///
+
+            for (int i = 0; i < beamIndexPairs.Length; i++)
+            {
+                var curPair = beamIndexPairs[i];
+                var beamA = beamArray[curPair.Item1];
+                var beamB = beamArray[curPair.Item2];
+
+                var xEvents = Intersection.CurveCurve(beamA.Axis, beamB.Axis, tol * 2.0, 0.0);
+                if(xEvents.Count == 0) continue;
+
+                foreach (var curveIntersection in xEvents)
+                {
+                    if (!curveIntersection.IsPoint) continue;
+                    var intPoint = RoundPoint(curveIntersection.PointA, tol);
+                    var voxel = new JointVoxel(intPoint, jointRadius, i);
+
+                    var index = jointTree.Insert(voxel);
+
+                    if (index == i)
+                    {
+                        beamTable[index] = new List<Beam> {beamA, beamB};
+                        voxelTable[index] = voxel;
+                    }
+                    else
+                    {
+                        if(!beamTable[index].Contains(beamA)) beamTable[index].Add(beamA);
+                        if(!beamTable[index].Contains(beamB)) beamTable[index].Add(beamB);
+                    }
+                }
+            }
+
+            return from valuePair in beamTable select new Joint(valuePair.Value, voxelTable[valuePair.Key]);
         }
 
         private static Point3d RoundPoint(Point3d point, double tolerance)

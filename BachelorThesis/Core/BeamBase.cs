@@ -51,6 +51,8 @@ namespace BachelorThesis.Core
             var planeParams = Axis.DivideByCount(divisionCount, true);
 
             var crossSections = new Curve[planeParams.Length];
+            var planes = new Plane[planeParams.Length];
+            var angles = new double[planeParams.Length];
             var widthInterval = new Interval(-Width / 2.0, Width / 2.0);
             var heightInterval = new Interval(-Height / 2.0, Height / 2.0);
 
@@ -62,7 +64,12 @@ namespace BachelorThesis.Core
 
                 var xDirection = Vector3d.CrossProduct(tangent, Up);
                 var angle = Vector3d.VectorAngle(plane.XAxis, xDirection, plane);
+                if (Math.Abs(angle) > 100000) angle = 0.0;
                 plane.Rotate(angle, plane.ZAxis);
+
+                // DEBUG!
+                planes[i] = plane;
+                angles[i] = angle;
 
                 // only works for linear beams
                 //var plane = new Plane(Axis.PointAt(param), Vector3d.CrossProduct(tangent, Up), Up);

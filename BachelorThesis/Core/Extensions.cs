@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using Rhino.Geometry;
@@ -36,6 +37,16 @@ namespace BachelorThesis.Core
             //if (param < curve.Domain.Min) return CurveEnd.Start;
             //if (curve.Domain.Min < param && param <= curve.Domain.Mid) return CurveEnd.Start;
             return param <= curve.Domain.Mid ? CurveEnd.Start : CurveEnd.End;
+        }
+
+        public static IEnumerable<Tuple<int, int>> Permutations(this IEnumerable<int> items)
+        {
+            var itemArray = items.ToArray();
+            return
+                from item1 in itemArray
+                from item2 in itemArray
+                where item1 < item2
+                select Tuple.Create(item1, item2);
         }
     }
 }

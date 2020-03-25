@@ -12,14 +12,16 @@ namespace BachelorThesis.Core
     public class Joint
     {
         public List<Beam> Beams { get; private set; } = new List<Beam>();
+        public JointVoxel Voxel { get; private set; }
         public Point3d Center { get; private set; }
         public Vector3d[] EndTangents { get; set; }
         public Point3d[] IntPts { get; set; }
 
-        public Joint(List<Beam> beams, Point3d center)
+        public Joint(List<Beam> beams, JointVoxel voxel)
         {
             Beams = beams;
-            Center = center;
+            Voxel = voxel;
+            Center = Voxel.Center;
         }
 
         public void AddBeam(Beam beam)
