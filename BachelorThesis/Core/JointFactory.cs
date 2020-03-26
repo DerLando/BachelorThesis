@@ -60,6 +60,7 @@ namespace BachelorThesis.Core
             var jointTree = new TragwerkTree();
             var beamTable = new Dictionary<int, List<Beam>>();
             var voxelTable = new Dictionary<int, JointVoxel>();
+            var unusedIndices = new Stack<int>();
 
             ///TODO: write this method utilizing voxels
             /// The idea is to have an insert method on the voxel tree, which returns
@@ -74,29 +75,45 @@ namespace BachelorThesis.Core
                 var curPair = beamIndexPairs[i];
                 var beamA = beamArray[curPair.Item1];
                 var beamB = beamArray[curPair.Item2];
+                var iUsed = false;
 
                 var xEvents = Intersection.CurveCurve(beamA.Axis, beamB.Axis, tol * 2.0, 0.0);
-                if(xEvents.Count == 0) continue;
+                if (xEvents.Count == 0)
+                {
+                    unusedIndices.Push(i);
+                    continue;
+                }
 
                 foreach (var curveIntersection in xEvents)
                 {
                     if (!curveIntersection.IsPoint) continue;
-                    var intPoint = RoundPoint(curveIntersection.PointA, tol);
-                    var voxel = new JointVoxel(intPoint, jointRadius, i);
+                    //var intPoint = RoundPoint(curveIntersection.PointA, tol);
+                    var intPoint = curveIntersection.PointA;
+                    var voxelIndex = iUsed ? unusedIndices.Pop() : i;
+                    var voxel = new JointVoxel(intPoint, jointRadius, voxelIndex);
 
                     var index = jointTree.Insert(voxel);
+                    if (i == index) iUsed = true;
 
-                    if (index == i)
+                    if (!beamTable.ContainsKey(index))
                     {
                         beamTable[index] = new List<Beam> {beamA, beamB};
                         voxelTable[index] = voxel;
                     }
                     else
                     {
-                        if(!beamTable[index].Contains(beamA)) beamTable[index].Add(beamA);
-                        if(!beamTable[index].Contains(beamB)) beamTable[index].Add(beamB);
+                        // DEBUG WHY DO I NEED THIS LINE MCNEEEEEEEEEEEEL?!?!?!!?
+                        // If it finds something in the tree it should mean it is contained right?
+                        // WROOOOOOOOONG!!
+                        if (voxelTable[index].Contains(intPoint))
+                        {
+                            if (!beamTable[index].Contains(beamA)) beamTable[index].Add(beamA);
+                            if (!beamTable[index].Contains(beamB)) beamTable[index].Add(beamB);
+                        }
                     }
                 }
+
+                if(!iUsed) unusedIndices.Push(i);
             }
 
             return from valuePair in beamTable select new Joint(valuePair.Value, voxelTable[valuePair.Key]);

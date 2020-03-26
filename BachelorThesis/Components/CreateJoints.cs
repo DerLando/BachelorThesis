@@ -25,6 +25,7 @@ namespace BachelorThesis.Components
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Beams", "B", "Beams to create joints from", GH_ParamAccess.list);
+            pManager.AddGenericParameter("Radius", "R", "Radius of joints created", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -43,10 +44,12 @@ namespace BachelorThesis.Components
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             List<Core.Beam> beams = new List<Core.Beam>();
+            double radius = 0;
 
             if(!DA.GetDataList(0, beams)) return;
+            if (!DA.GetData(1, ref radius)) return;
 
-            var joints = JointFactory.CreateJoints(beams, out var beamArray).ToArray();
+            var joints = JointFactory.CreateJoints(beams, radius, out var beamArray).ToArray();
             foreach (var joint in joints)
             {
                 joint.AlignBeamGeometry();

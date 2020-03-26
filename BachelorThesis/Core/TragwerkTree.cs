@@ -19,7 +19,8 @@ namespace BachelorThesis.Core
         public int Insert(JointVoxel voxel)
         {
             var data = new SearchData();
-            _tree.Search(voxel.BoundingBox, SearchCallback, data);
+            //_tree.Search(voxel.BoundingBox, SearchCallback, data);
+            _tree.Search(voxel.Sphere, SearchCallback, data);
 
             // voxel is contained in other voxel, return that containing index
             if (data.FoundSomething) return data.ContainedIndex;

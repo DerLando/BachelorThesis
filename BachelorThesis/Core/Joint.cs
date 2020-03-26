@@ -31,17 +31,13 @@ namespace BachelorThesis.Core
 
         private CurveEnd FindEnd(Beam beam)
         {
-            beam.Axis.ClosestPoint(Center, out var param);
-            var tol = RhinoDoc.ActiveDoc.ModelAbsoluteTolerance;
-            var epsilon = beam.Axis.Domain.Length * tol;
-
-            var isStart = Math.Abs(param - beam.Axis.Domain.Min) < epsilon;
-            var isEnd = Math.Abs(param - beam.Axis.Domain.Max) < epsilon;
+            var isStart = Voxel.Contains(beam.Axis.PointAtStart);
+            var isEnd = Voxel.Contains(beam.Axis.PointAtEnd);
             if (isStart && !isEnd) return CurveEnd.Start;
             if (!isStart && isEnd) return CurveEnd.End;
             if (isStart && isEnd)
                 throw new Exception(
-                    $"FindEnd ERROR: Could not define end for {beam.Axis} at param {param} with epsilon {epsilon}!");
+                    $"FindEnd ERROR: Could not define end for {beam.Axis} for end points {beam.Axis.PointAtStart}, {beam.Axis.PointAtEnd} and voxel {Voxel}!");
             return CurveEnd.None;
         }
 
@@ -52,6 +48,31 @@ namespace BachelorThesis.Core
         {
             var ends = (from beam in Beams select FindEnd(beam)).ToArray();
             var mainBeamIndex = ends.ToList().FindIndex(e => e == CurveEnd.None);
+
+            if (mainBeamIndex == -1)
+            {
+                // test for closed loop
+                var testLoop = Curve.JoinCurves(from beam in Beams select beam.Axis,
+                    RhinoDoc.ActiveDoc.ModelAbsoluteTolerance * 2);
+                if (testLoop.Length == 1 && testLoop[0].IsClosed)
+                {
+                    // TODO: Actually handle the closed loop case
+                    return;
+                }
+                var doc = RhinoDoc.ActiveDoc;
+                var ids = new List<Guid>();
+                ids.Add(doc.Objects.AddSphere(Voxel.Sphere));
+                ids.Add(doc.Objects.AddPoint(Voxel.Center));
+                foreach (var beam in Beams)
+                {
+                    ids.Add(doc.Objects.AddBrep(beam.Geometry));
+                    ids.Add(doc.Objects.AddCurve(beam.Axis));
+                }
+
+                doc.Groups.Add("No main beam", ids);
+                throw new Exception("AlignBeamGeometry ERROR: No Main beam found!");
+            }
+
             var mainBeam = Beams[mainBeamIndex];
             var mainBeamGeo = mainBeam.GetVolumeGeometry();
 
@@ -73,8 +94,14 @@ namespace BachelorThesis.Core
                 {
                     if (ends.All(e => e == CurveEnd.None)) continue;
                     var doc = RhinoDoc.ActiveDoc;
-                    doc.Objects.AddCurve(curBeam.Axis);
-                    doc.Objects.AddBrep(mainBeamGeo);
+                    var ids = new List<Guid>();
+                    foreach (var beam in Beams)
+                    {
+                        ids.Add(doc.Objects.AddCurve(beam.Axis));
+                    }
+                    ids.Add(doc.Objects.AddBrep(mainBeamGeo));
+                    ids.Add(doc.Objects.AddPoint(Voxel.Center));
+                    doc.Groups.Add("Voxel", ids);
                     throw new Exception($"AlignBeamGeometry ERROR: {curEnd} for beam {i}!");
                 }
 

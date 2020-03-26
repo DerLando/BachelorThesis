@@ -111,11 +111,18 @@ namespace BachelorThesis.Core
                 case CurveEnd.Start:
                     _startTangent = tangent;
                     _startParam = param;
+                    if (_startModified)
+                    {
+                    }
                     _startModified = true;
                     break;
                 case CurveEnd.End:
                     _endTangent = tangent;
                     _endParam = param;
+                    if (_endModified)
+                    {
+                        throw new Exception("SetEndCondition ERROR: Tried to set end condition twice");
+                    }
                     _endModified = true;
                     break;
                 case CurveEnd.Both:
@@ -172,60 +179,51 @@ namespace BachelorThesis.Core
             //return !noStartCondition | !noEndCondition;
         }
 
-        public void ShortenEnds()
+        private void _shortenEndHelperNew(bool start)
         {
-            if (!isInNeedOfShortening()) return;
             var tol = RhinoDoc.ActiveDoc.ModelAbsoluteTolerance;
+            var end = start ? "start" : "end";
+            Plane plane;
+            if (start) plane = new Plane(Axis.PointAt(_startParam), -_startTangent);
+            else plane = new Plane(Axis.PointAt(_endParam), -_endTangent);
 
-            var plane = new Plane(Axis.PointAt(_startParam), -_startTangent);
-            var trimmed = _volumeGeometry.Trim(plane, tol * 2.0);
-            if (trimmed.Length != 1)
+            var interval = new Interval(-1, 1);
+            var trimmedPlane = Brep.CreateTrimmedPlane(plane,
+                new Rectangle3d(plane, interval, interval).ToNurbsCurve());
+            var split = _geometry.Split(trimmedPlane, tol * 2.0);
+
+            if (split.Length != 2)
             {
-                // Try harder
-                RhinoApp.WriteLine($"ShortenEnds WARNING: Planesplit at start failed with tolerance {tol}");
-                var interval = new Interval(-0.5, 0.5);
-                var trimmedPlane = Brep.CreateTrimmedPlane(plane,
-                    new Rectangle3d(plane, interval, interval).ToNurbsCurve());
-                var split = _volumeGeometry.Split(trimmedPlane, tol * 2.0);
-                if (split.Length != 2)
-                {
-                    Intersection.BrepPlane(_volumeGeometry, plane, tol, out var intCrvs, out var intPts);
-                    List<Guid> ids = new List<Guid>();
-                    foreach (var intCrv in intCrvs)
-                    {
-                        ids.Add(RhinoDoc.ActiveDoc.Objects.AddCurve(intCrv));
-                    }
-
-                    foreach (var brep in split)
-                    {
-                        ids.Add(RhinoDoc.ActiveDoc.Objects.AddBrep(brep));
-                    }
-                    ids.Add(RhinoDoc.ActiveDoc.Objects.AddBrep(trimmedPlane));
-
-                    RhinoDoc.ActiveDoc.Groups.Add("start", ids);
-                }
-                else
-                {
-                    var areas = (from part in split select part.GetArea()).ToArray();
-                    Array.Sort(areas, split);
-                    _geometry = split[1];
-                }
+                RhinoApp.WriteLine($"ShortenEnds WARNING: Planesplit at {end} failed");
             }
+            else
+            {
+                var areas = (from part in split select part.GetArea()).ToArray();
+                Array.Sort(areas, split);
+                _geometry = split[1];
+            }
+        }
 
-            else _geometry = trimmed[0];
+        private void _shortenEndHelper(bool start)
+        {
+            var tol = RhinoDoc.ActiveDoc.ModelAbsoluteTolerance;
+            var end = start ? "start" : "end";
+            Plane plane;
+            if(start) plane = new Plane(Axis.PointAt(_startParam), -_startTangent);
+            else plane = new Plane(Axis.PointAt(_endParam), -_endTangent);
 
-            plane = new Plane(Axis.PointAt(_endParam), -_endTangent);
-            trimmed = _geometry.Trim(plane, tol * 2.0);
+            var trimmed = _geometry.Trim(plane, tol * 2.0);
             if (trimmed.Length != 1)
             {
                 // Try harder
-                RhinoApp.WriteLine($"ShortenEnds WARNING: Planesplit at end failed with tolerance {tol}");
+                RhinoApp.WriteLine($"ShortenEnds WARNING: Planesplit at {end} failed");
                 var interval = new Interval(-0.5, 0.5);
                 var trimmedPlane = Brep.CreateTrimmedPlane(plane,
                     new Rectangle3d(plane, interval, interval).ToNurbsCurve());
                 var split = _geometry.Split(trimmedPlane, tol * 2.0);
                 if (split.Length != 2)
                 {
+                    RhinoApp.WriteLine("ShortenEnds WARNING: Could not recover split :/");
                     Intersection.BrepPlane(_geometry, plane, tol, out var intCrvs, out var intPts);
                     List<Guid> ids = new List<Guid>();
                     foreach (var intCrv in intCrvs)
@@ -233,13 +231,10 @@ namespace BachelorThesis.Core
                         ids.Add(RhinoDoc.ActiveDoc.Objects.AddCurve(intCrv));
                     }
 
-                    foreach (var brep in split)
-                    {
-                        ids.Add(RhinoDoc.ActiveDoc.Objects.AddBrep(brep));
-                    }
+                    ids.Add(RhinoDoc.ActiveDoc.Objects.AddBrep(_geometry));
                     ids.Add(RhinoDoc.ActiveDoc.Objects.AddBrep(trimmedPlane));
 
-                    RhinoDoc.ActiveDoc.Groups.Add("end", ids);
+                    RhinoDoc.ActiveDoc.Groups.Add(end, ids);
                 }
                 else
                 {
@@ -250,6 +245,15 @@ namespace BachelorThesis.Core
             }
 
             else _geometry = trimmed[0];
+        }
+
+        public void ShortenEnds()
+        {
+            if (_startModified) _shortenEndHelperNew(true);
+            if (_endModified) _shortenEndHelperNew(false);
+
+            if((!_startModified && _endModified) | (_startModified && !_endModified)) 
+                RhinoApp.WriteLine($"Shorten Ends WARNING: ends to modify: start:{_startModified}, end:{_endModified}");
         }
 
         public Brep GetVolumeGeometry()

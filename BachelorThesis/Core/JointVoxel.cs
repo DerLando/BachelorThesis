@@ -14,6 +14,8 @@ namespace BachelorThesis.Core
         public Interval Z { get; set; }
         public Point3d Center { get; set; }
         public BoundingBox BoundingBox { get; set; }
+        public Sphere Sphere { get; set; }
+        public double Radius { get; set; }
         public int Index { get; set; }
 
         private static Interval _intervalHelper(double mid, double radius)
@@ -28,13 +30,17 @@ namespace BachelorThesis.Core
             Y = _intervalHelper(Center.Y, radius);
             Z = _intervalHelper(Center.Z, radius);
             BoundingBox = new BoundingBox(X.Min, Y.Min, Z.Min, X.Max, Y.Max, Z.Max);
+            Radius = radius;
+            Sphere = new Sphere(Center, Radius);
             Index = index;
         }
 
         public bool Contains(Point3d testPoint)
         {
-            return X.IncludesParameter(testPoint.X) && Y.IncludesParameter(testPoint.Y) &&
-                   Z.IncludesParameter(testPoint.Z);
+            //return X.IncludesParameter(testPoint.X) && Y.IncludesParameter(testPoint.Y) &&
+            //       Z.IncludesParameter(testPoint.Z);
+            //return BoundingBox.Contains(testPoint);
+            return Center.DistanceTo(testPoint) < Radius;
         }
     }
 }
