@@ -16,7 +16,15 @@ namespace BachelorThesis.Core
         // Rhino - Koordinatenebene auf welcher die Parabel definiert wird
         public Plane Plane;
         // 3d - Geometry der Parabel, ausgedrückt als Rhino - Bezierkurve
-        public BezierCurve Curve { get; }
+        public BezierCurve Curve { get; internal set; }
+
+        public Parabola()
+        {
+            Width = 0.0;
+            Height = 0.0;
+            Plane = Plane.Unset;
+            Curve = null;
+        }
 
         /// Funktion, welche ein neues `Parabel-Objekt` mit den gegebenen Werten
         /// für Breite, Höhe und Koordinatensystem erzeugt
@@ -31,7 +39,7 @@ namespace BachelorThesis.Core
 
         /// Errechnet die genaue Position der drei Kontrollpunkte, die benötigt werden
         /// um die Parabel durch eine Bezierkurve abbilden zu können
-        private Point3d[] CalculateControlPoints()
+        protected Point3d[] CalculateControlPoints()
         {
             // Leeres `Array`, welches die 3 Kontrollpunkte aufnehmen kann
             var controlPoints = new Point3d[3];
@@ -78,7 +86,7 @@ namespace BachelorThesis.Core
         }
 
         /// Ermittelt die Punkte auf der Parabel zu einer gegebenen Höhe
-        public Point3d[] GetPointsAtHeight(double height)
+        public virtual Point3d[] GetPointsAtHeight(double height)
         {
             // Ermittle zur Höhe zugehörige X-Werte
             var xValues = EvaluateY(height);
@@ -106,5 +114,9 @@ namespace BachelorThesis.Core
             return Plane.PointAt(width, EvaluateX(width));
         }
 
+        //public Parabola Duplicate()
+        //{
+        //    return new Parabola(Width, Height, Plane);
+        //}
     }
 }
