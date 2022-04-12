@@ -14,9 +14,15 @@ namespace BachelorThesis.Core
         {
         }
 
+        /// <summary>
+        /// Erzeuge eine neue <see cref="RotatedParabola"/> Instanz.
+        /// </summary>
+        /// <param name="width">Die Gesamtbreite der Parabel, auf der X-Achse</param>
+        /// <param name="height">Die Gesamthöhe der Parabel, auf der Y-Achse</param>
+        /// <param name="plane">Die Konstruktionsebene, auf welcher die Parabel erzeugt wird</param>
+        /// <param name="drag"></param>
         public RotatedParabola(double width, double height, Plane plane, double drag) : base(width, height, plane)
         {
-            // TODO: Drag is doing something wierd
             var points = CalculateControlPoints();
             var displacement = plane.XAxis * drag * width / 2.0;
             points[1].Transform(Transform.Translation(displacement));
@@ -57,35 +63,36 @@ namespace BachelorThesis.Core
             return true;
         }
 
+        /// <summary>
+        /// Finde alle Punkte auf dieser <see cref="RotatedParabola"/>,
+        /// welche eine Höhe von 'globalHeight' haben.
+        /// </summary>
+        /// <param name="globalHeight">Die Höhe, für welche Punkte gesucht werden</param>
+        /// <returns>Die gefundenen Punkte, falls vorhanden</returns>
         public Point3d[] GetGlobalPointsAtHeight(double globalHeight)
         {
             if (this.Curve is null) return base.GetPointsAtHeight(globalHeight);
 
-            // TODO: Implement new height evaluation, which just generates a plane at the given plane,
-            // Intersects it with the intenral curve,
-            // Orders the intersection points along the intenral curve, if any
-            // And returns them.
+            // erzeuge eine Hilfs-Schnittebene auf Höhe von 'globalHeight'
             var cuttingPlane = Plane.WorldXY;
             var origin = new Point3d(0.0, 0.0, globalHeight);
             cuttingPlane.Origin = origin;
 
-            // TODO: Maybe there is a smart, mathematical way to evaluate thos points directly?
-
+            // erzeuge eine leere Liste für alle gefundenen Schnittpunkte
             var intPoints = new List<Point3d>();
 
+            // suche nach Schnittmengen zwischen der Schnittebene und der Parabel
             var xEvents = Intersection.CurvePlane(this.Curve.ToNurbsCurve(), cuttingPlane, 0.001);
             if (xEvents is null) return intPoints.ToArray();
             foreach (var xEvent in xEvents)
             {
+                // Falls in der Schnittmenge Punkte vorhanden sind, speichere sie
                 if (!xEvent.IsPoint) continue;
-
                 intPoints.Add(xEvent.PointA);
             }
 
+            // Gib alle gefundenen Schnittpunkte aus
             return intPoints.ToArray();
-
-            // TODO: How can we pass around rotated parabolas between definitions?
-
 
         }
     }
